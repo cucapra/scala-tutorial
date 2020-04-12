@@ -29,8 +29,8 @@ object Parser{
   def ident[_: P] = P( ident0 ).map(Expr.Ident)
   def ident0[_: P] = P( CharIn("a-zA-Z_") ~~ CharsWhileIn("a-zA-Z0-9_", 0) ).! // identifiers can only begin with string
 
-  def plus[_: P] = P( "+" ~ prefixExpr )
-  def dict[_: P] = P( "{" ~/ (str0 ~ ":" ~/ expr).rep(0, ",") ~ "}" ).map(kvs => Expr.Dict(kvs.toMap))
+  def plus[_: P] = P( "+" ~ prefixExpr ) // + signals that plus would be preformed
+  def dict[_: P] = P( "{" ~/ (str0 ~ ":" ~/ expr).rep(0, ",") ~ "}" ).map(kvs => Expr.Dict(kvs.toMap)) // {} signals that whatever that is inside is dic seperated by ,
   def local[_: P] = P( "local" ~/ ident0 ~ "=" ~ expr ~ ";" ~ expr ).map(Expr.Local.tupled)
   def func[_: P] = P( "function" ~/ "(" ~ ident0.rep(0, ",") ~ ")" ~ expr ).map(Expr.Func.tupled)
   def call[_: P] = P( "(" ~/ expr.rep(0, ",") ~ ")" )
@@ -40,7 +40,7 @@ object Parser{
 }
 
 // second step is to evaluate expressions to values
-// the only values can only be string, dictionary, function
+// the only values would be in the form of string, dictionary, or function
 sealed trait Value 
 object Value {
   case class Str(str: String) extends Value
@@ -48,11 +48,12 @@ object Value {
   case class Func(call: Seq[Value] => Value) extends Value
 }
 
-object Interpreter {
+object Eval {
 
 def evaluate(expr: Expr, scope: Map[String, Value]): Value = expr match{
-  case Expr.Str(s) => Value.Str(s)
-  case Expr.Dict(kvs) => Value.Dict(kvs.map{case (k, v) => (k, evaluate(v, scope))})
+  case Expr.Str(s) => Value.Str(s) 
+  case Expr.Dict(kvs) => Value.Dict(kvs.map{case (k, v) => (k, evaluate(v, scope))}) // strings and dictionaries are directly evaluated to values 
+  //(expressions wrapped inside should be evaluated recursively)
   case Expr.Plus(items) =>
     Value.Str(items.map(evaluate(_, scope)).map{case Value.Str(s) => s}.mkString)
   case Expr.Local(name, assigned, body) =>
@@ -67,6 +68,7 @@ def evaluate(expr: Expr, scope: Map[String, Value]): Value = expr match{
     Value.Func(args => evaluate(body, scope ++ argNames.zip(args)))
 }
 
+// value to json format
 def serialize(v: Value): String = v match{
   case Value.Str(s) => "\"" + s + "\""
   case Value.Dict(kvs) =>
@@ -79,8 +81,21 @@ def jsonnet(input: String): String = {
 
 }
 
-// object Interp {
-//   def main(args: Array[String]): Unit = {
-//     println("Hello world!")
-//   }
-// }
+object Interp {
+  def main(args: Array[String]): Unit = {
+
+    //test the interpreter
+    println(Eval.jsonnet(
+  """local greeting = "Hello ";
+     local person = function (name) {
+       "name": name,
+       "welcome": greeting + name + "!"
+     };
+     {
+       "person1": person("Alice"),
+       "person2": person("Bob"),
+       "person3": person("Charlie")
+     }"""
+  ))
+  }
+}

@@ -22,6 +22,10 @@ To start `sbt`, just type `sbt` in the terminal from the "root" of your project
 
 TODO(yoona): Add explanations for the following language constructs.
 
-- **sealed trait**: TODO
-- **case class**: TODO
+- **trait**: trait is a collection of abstract and non-abstract methods which are used to share interface between classes 
+- **sealed trait**: when a trait is sealed, all the subtypes are declared and thus the pattern matching is comprehensive
+- **case class**: case class is a special type of class which have special methods by default. Case classes are useful for pattern matching as it
+specifies the cases of pattern matching the instance.
+- **Seq**: iterable that has length and can be accessed with indices.  
+- **.mkString method**: is a scala method that help you create a String representation of collection elements by iterating through the collection
 - anything else
